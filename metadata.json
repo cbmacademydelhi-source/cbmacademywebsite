@@ -1,0 +1,6 @@
+{
+  "name": "CBM Academy",
+  "description": "Official website for CBM Academy - Digital Marketing and AI Academy featuring courses, admissions, verification, and admissions portal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
