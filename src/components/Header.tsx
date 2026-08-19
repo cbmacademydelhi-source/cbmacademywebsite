@@ -97,7 +97,7 @@ export const Header: React.FC = () => {
             id="brand-logo-btn"
           >
             <img
-              src="/assets/cbm-academy-logo.jpg"
+              src="/cbm-logo.png"
               alt="CBM Academy - Digital Marketing and AI Academy"
               referrerPolicy="no-referrer"
               className="h-11 sm:h-12 md:h-14 w-auto object-contain transition-transform duration-200 hover:scale-[1.02]"
