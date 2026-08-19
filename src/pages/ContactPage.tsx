@@ -130,7 +130,9 @@ if (result?.success) {
     } catch (err: any) {
       console.error('Submission error:', err);
       setSubmitStatus('error');
-      setStatusMessage('Network error. Please check your internet connection or email us directly at office@cbmacademy.in.');
+     setStatusMessage(
+  err instanceof Error ? err.message : 'Submission failed. Please try again.'
+);
     } finally {
       setIsSubmitting(false);
     }
