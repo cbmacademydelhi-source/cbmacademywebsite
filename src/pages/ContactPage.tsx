@@ -12,7 +12,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { ApplicationFormData } from '../types';
-
+import { createClient } from '@supabase/supabase-js';
 export const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState<ApplicationFormData>({
     name: '',
@@ -81,22 +81,34 @@ export const ContactPage: React.FC = () => {
     setStatusMessage('');
 
     try {
-      const response = await fetch('/api/apply', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
+      const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
+);
 
-      const result = await response.json();
+const { data, error } = await supabase.functions.invoke(
+  "send-application-email",
+  {
+    body: formData,
+  }
+);
 
-      if (response.ok && result.success) {
-        setSubmitStatus('success');
-        setStatusMessage(
-          result.message ||
-            'Your application has been submitted successfully. We will get in touch with you soon.'
-        );
+if (error) {
+  throw error;
+}
+
+if (data?.error) {
+  throw new Error(data.error);
+}
+
+      const result = data;
+
+if (result?.success) {
+  setSubmitStatus('success');
+  setStatusMessage(
+    result.message ||
+    'Your application has been submitted successfully. We will get in touch with you soon.'
+  );
         // Clear the form after successful submission
         setFormData({
           name: '',
