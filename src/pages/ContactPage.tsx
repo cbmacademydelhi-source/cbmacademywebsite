@@ -86,12 +86,17 @@ export const ContactPage: React.FC = () => {
   import.meta.env.VITE_SUPABASE_ANON_KEY
 );
 
-const { data, error } = await supabase.functions.invoke(
-  "send-application-email",
-  {
-    body: formData,
-  }
-);
+const { error } = await supabase
+  .from("Applications")
+  .insert([
+    {
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      course: formData.course,
+      message: formData.message,
+    },
+  ]);
 
 if (error) {
   throw error;
