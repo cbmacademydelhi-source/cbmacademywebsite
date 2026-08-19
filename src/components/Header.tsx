@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, ArrowRight, Phone, Mail } from 'lucide-react';
-
+import logo from '../cbm-logo.png.jpeg';
 export const Header: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
@@ -97,7 +97,7 @@ export const Header: React.FC = () => {
             id="brand-logo-btn"
           >
             <img
-              src="/cbm-logo.png"
+              src={logo}"
               alt="CBM Academy - Digital Marketing and AI Academy"
               referrerPolicy="no-referrer"
               className="h-11 sm:h-12 md:h-14 w-auto object-contain transition-transform duration-200 hover:scale-[1.02]"
