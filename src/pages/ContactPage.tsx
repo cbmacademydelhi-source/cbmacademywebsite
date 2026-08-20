@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
   Send,
+  CheckCircle2,
+  AlertCircle,
   MapPin,
   Phone,
   Mail,
@@ -9,7 +11,9 @@ import {
   Sparkles,
   ArrowRight,
 } from 'lucide-react';
+
 import { ApplicationFormData } from '../types';
+import { supabase } from '../lib/supabase';
 
 export const ContactPage: React.FC = () => {
   const [formData, setFormData] = useState<ApplicationFormData>({
@@ -20,6 +24,18 @@ export const ContactPage: React.FC = () => {
     message: '',
   });
 
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof ApplicationFormData, string>>
+  >({});
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [submitStatus, setSubmitStatus] = useState<
+    'idle' | 'success' | 'error'
+  >('idle');
+
+  const [statusMessage, setStatusMessage] = useState('');
+
   const coursesList = [
     'Master in Digital Marketing & AI Strategy',
     'AI in Digital Marketing & Growth Systems',
@@ -29,6 +45,105 @@ export const ContactPage: React.FC = () => {
     'Web Analytics, GA4 & Conversion Rate Optimization (CRO)',
     'Executive Digital Leadership Program (Weekend Batch)',
   ];
+
+  const validate = (): boolean => {
+    const newErrors: Partial<
+      Record<keyof ApplicationFormData, string>
+    > = {};
+
+    if (!formData.name.trim()) {
+      newErrors.name = 'Full Name is required.';
+    } else if (formData.name.trim().length < 2) {
+      newErrors.name = 'Name must be at least 2 characters.';
+    }
+
+    if (!formData.phone.trim()) {
+      newErrors.phone = 'Phone Number is required.';
+    } else if (!/^[0-9+\s-]{8,15}$/.test(formData.phone.trim())) {
+      newErrors.phone =
+        'Please enter a valid phone number (8-15 digits).';
+    }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email address is required.';
+    } else if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())
+    ) {
+      newErrors.email = 'Please enter a valid email address.';
+    }
+
+    if (!formData.course.trim()) {
+      newErrors.course = 'Please select a course.';
+    }
+
+    if (!formData.message.trim()) {
+      newErrors.message = 'Message or career objective is required.';
+    } else if (formData.message.trim().length < 5) {
+      newErrors.message =
+        'Message must be at least 5 characters.';
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+    setSubmitStatus('idle');
+    setStatusMessage('');
+
+    try {
+      const { error } = await supabase
+        .from('admissions')
+        .insert({
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim(),
+          course: formData.course,
+          message: formData.message.trim(),
+        });
+
+      if (error) {
+        console.error('Supabase submission error:', error);
+
+        setSubmitStatus('error');
+        setStatusMessage(
+          'Unable to submit application. Please try again.'
+        );
+
+        return;
+      }
+
+      setSubmitStatus('success');
+      setStatusMessage(
+        'Application submitted successfully!'
+      );
+
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        course: 'Master in Digital Marketing & AI Strategy',
+        message: '',
+      });
+
+      setErrors({});
+    } catch (error) {
+      console.error('Submission error:', error);
+
+      setSubmitStatus('error');
+      setStatusMessage(
+        'Something went wrong. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="bg-slate-50 min-h-screen py-12 lg:py-16">
@@ -46,14 +161,14 @@ export const ContactPage: React.FC = () => {
           </h1>
 
           <p className="text-slate-600 mt-3 text-base sm:text-lg">
-            Submit your application form below. Our admissions council will
-            review your profile and reach out within 24 hours.
+            Submit your application form below. Our admissions council
+            will review your profile and reach out within 24 hours.
           </p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
 
-          {/* LEFT: FORM */}
+          {/* Application Form */}
           <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-10 border border-slate-200/80 shadow-md">
 
             <div className="border-b border-slate-100 pb-6 mb-6">
@@ -62,32 +177,63 @@ export const ContactPage: React.FC = () => {
               </h2>
 
               <p className="text-sm text-slate-500 mt-1">
-                Fill out the required details below to submit your official
-                application.
+                Fill out the required details below to submit your official application.
               </p>
             </div>
 
-            {/* 
-              IMPORTANT:
-              This is the ONLY form submission endpoint.
-              No /api/apply
-              No Supabase
-              No Resend
-            */}
+            {/* Success State */}
+            {submitStatus === 'success' && (
+              <div
+                id="application-success-box"
+                className="mb-8 p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950"
+              >
+                <div className="flex items-start gap-4">
+                  <CheckCircle2 className="w-7 h-7 text-emerald-600 shrink-0 mt-0.5" />
+
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-bold text-emerald-900">
+                      Application Submitted Successfully
+                    </h3>
+
+                    <p className="text-sm text-emerald-800 leading-relaxed font-medium">
+                      {statusMessage}
+                    </p>
+
+                    <p className="text-xs text-emerald-700 pt-2">
+                      Your application has been saved successfully.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error State */}
+            {submitStatus === 'error' && (
+              <div
+                id="application-error-box"
+                className="mb-8 p-4 rounded-xl bg-red-50 border border-red-200 text-red-900 flex items-start gap-3 text-sm"
+              >
+                <AlertCircle className="w-5 h-5 text-red-600 shrink-0 mt-0.5" />
+
+                <div>
+                  <p className="font-bold">
+                    Submission Failed
+                  </p>
+
+                  <p className="text-xs text-red-700 mt-0.5">
+                    {statusMessage}
+                  </p>
+                </div>
+              </div>
+            )}
+
             <form
-              action="https://formspree.io/f/myeglvqo"
-              method="POST"
+              onSubmit={handleSubmit}
               className="space-y-5"
+              noValidate
             >
 
-              {/* Subject for email */}
-              <input
-                type="hidden"
-                name="_subject"
-                value="New CBM Academy Application"
-              />
-
-              {/* Name */}
+              {/* Full Name */}
               <div>
                 <label
                   htmlFor="name"
@@ -100,7 +246,6 @@ export const ContactPage: React.FC = () => {
                   type="text"
                   id="name"
                   name="name"
-                  required
                   placeholder="e.g. Rahul Sharma"
                   value={formData.name}
                   onChange={(e) =>
@@ -109,11 +254,22 @@ export const ContactPage: React.FC = () => {
                       name: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                  className={`w-full px-4 py-3 rounded-xl border text-sm transition-colors focus:outline-hidden focus:ring-2 ${
+                    errors.name
+                      ? 'border-red-400 bg-red-50/20 focus:ring-red-400'
+                      : 'border-slate-200 focus:border-orange-500 focus:ring-orange-500/20'
+                  }`}
+                  aria-required="true"
                 />
+
+                {errors.name && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.name}
+                  </p>
+                )}
               </div>
 
-              {/* Phone + Email */}
+              {/* Phone & Email */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                 {/* Phone */}
@@ -129,7 +285,6 @@ export const ContactPage: React.FC = () => {
                     type="tel"
                     id="phone"
                     name="phone"
-                    required
                     placeholder="e.g. +91 98765 43210"
                     value={formData.phone}
                     onChange={(e) =>
@@ -138,8 +293,19 @@ export const ContactPage: React.FC = () => {
                         phone: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-colors focus:outline-hidden focus:ring-2 ${
+                      errors.phone
+                        ? 'border-red-400 bg-red-50/20 focus:ring-red-400'
+                        : 'border-slate-200 focus:border-orange-500 focus:ring-orange-500/20'
+                    }`}
+                    aria-required="true"
                   />
+
+                  {errors.phone && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">
+                      {errors.phone}
+                    </p>
+                  )}
                 </div>
 
                 {/* Email */}
@@ -155,7 +321,6 @@ export const ContactPage: React.FC = () => {
                     type="email"
                     id="email"
                     name="email"
-                    required
                     placeholder="e.g. rahul@example.com"
                     value={formData.email}
                     onChange={(e) =>
@@ -164,8 +329,19 @@ export const ContactPage: React.FC = () => {
                         email: e.target.value,
                       })
                     }
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                    className={`w-full px-4 py-3 rounded-xl border text-sm transition-colors focus:outline-hidden focus:ring-2 ${
+                      errors.email
+                        ? 'border-red-400 bg-red-50/20 focus:ring-red-400'
+                        : 'border-slate-200 focus:border-orange-500 focus:ring-orange-500/20'
+                    }`}
+                    aria-required="true"
                   />
+
+                  {errors.email && (
+                    <p className="text-xs text-red-500 mt-1 font-medium">
+                      {errors.email}
+                    </p>
+                  )}
                 </div>
 
               </div>
@@ -182,7 +358,6 @@ export const ContactPage: React.FC = () => {
                 <select
                   id="course"
                   name="course"
-                  required
                   value={formData.course}
                   onChange={(e) =>
                     setFormData({
@@ -190,7 +365,12 @@ export const ContactPage: React.FC = () => {
                       course: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                  className={`w-full px-4 py-3 rounded-xl border text-sm bg-white transition-colors focus:outline-hidden focus:ring-2 ${
+                    errors.course
+                      ? 'border-red-400 bg-red-50/20 focus:ring-red-400'
+                      : 'border-slate-200 focus:border-orange-500 focus:ring-orange-500/20'
+                  }`}
+                  aria-required="true"
                 >
                   {coursesList.map((course, index) => (
                     <option key={index} value={course}>
@@ -198,6 +378,12 @@ export const ContactPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
+
+                {errors.course && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.course}
+                  </p>
+                )}
               </div>
 
               {/* Message */}
@@ -213,7 +399,6 @@ export const ContactPage: React.FC = () => {
                 <textarea
                   id="message"
                   name="message"
-                  required
                   rows={4}
                   placeholder="Tell us about your educational background, current role, and what you aim to achieve with CBM Academy..."
                   value={formData.message}
@@ -223,44 +408,55 @@ export const ContactPage: React.FC = () => {
                       message: e.target.value,
                     })
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20"
+                  className={`w-full px-4 py-3 rounded-xl border text-sm transition-colors focus:outline-hidden focus:ring-2 ${
+                    errors.message
+                      ? 'border-red-400 bg-red-50/20 focus:ring-red-400'
+                      : 'border-slate-200 focus:border-orange-500 focus:ring-orange-500/20'
+                  }`}
+                  aria-required="true"
                 />
-              </div>
 
-              {/* Reply-to email */}
-              <input
-                type="hidden"
-                name="_replyto"
-                value={formData.email}
-              />
+                {errors.message && (
+                  <p className="text-xs text-red-500 mt-1 font-medium">
+                    {errors.message}
+                  </p>
+                )}
+              </div>
 
               {/* Submit */}
               <div className="pt-2">
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 text-white font-extrabold text-base shadow-lg shadow-orange-500/20 transition-all duration-150"
+                  id="submit-application-btn"
+                  disabled={isSubmitting}
+                  className="w-full flex items-center justify-center gap-2 py-4 px-6 rounded-xl bg-orange-500 hover:bg-orange-600 active:bg-orange-700 disabled:bg-orange-300 text-white font-extrabold text-base shadow-lg shadow-orange-500/20 transition-all duration-150 active:scale-[0.99] cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
-                  <span>Submit Application</span>
+
+                  <span>
+                    {isSubmitting
+                      ? 'Submitting Application...'
+                      : 'Submit Application'}
+                  </span>
                 </button>
               </div>
 
               <div className="flex items-center justify-center gap-2 text-xs text-slate-400 pt-2">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
+
                 <span>
-                  Your information is protected and stored securely. No spam
-                  policy.
+                  Your information is protected and stored securely. No spam policy.
                 </span>
               </div>
 
             </form>
           </div>
 
-          {/* RIGHT SIDE */}
+          {/* Right Side */}
           <div className="lg:col-span-5 space-y-6">
 
             {/* Campus Info */}
-            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm space-y-6">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-6">
 
               <h3 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
                 CBM Academy Campus & Office
@@ -270,7 +466,7 @@ export const ContactPage: React.FC = () => {
 
                 {/* Location */}
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
                     <MapPin className="w-5 h-5" />
                   </div>
 
@@ -280,15 +476,14 @@ export const ContactPage: React.FC = () => {
                     </h4>
 
                     <p className="text-slate-600 leading-relaxed mt-0.5">
-                      CBM Academy Training Center, Connaught Place & South
-                      Extension Hub, New Delhi - 110001, India
+                      CBM Academy Training Center, Connaught Place & South Extension Hub, New Delhi - 110001, India
                     </p>
                   </div>
                 </div>
 
                 {/* Email */}
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
                     <Mail className="w-5 h-5" />
                   </div>
 
@@ -308,7 +503,7 @@ export const ContactPage: React.FC = () => {
 
                 {/* Phone */}
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
                     <Phone className="w-5 h-5" />
                   </div>
 
@@ -325,7 +520,7 @@ export const ContactPage: React.FC = () => {
 
                 {/* Hours */}
                 <div className="flex items-start gap-3.5">
-                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
                     <Clock className="w-5 h-5" />
                   </div>
 
@@ -359,9 +554,7 @@ export const ContactPage: React.FC = () => {
               </h3>
 
               <p className="text-sm text-slate-400 leading-relaxed">
-                Schedule a 20-minute profile evaluation with our Senior
-                Digital Marketing Strategist to choose the right
-                specialization.
+                Schedule a 20-minute profile evaluation with our Senior Digital Marketing Strategist to choose the right specialization.
               </p>
 
               <div className="pt-2">
@@ -375,10 +568,3 @@ export const ContactPage: React.FC = () => {
               </div>
 
             </div>
-
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
