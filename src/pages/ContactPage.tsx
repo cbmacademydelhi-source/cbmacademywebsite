@@ -16,11 +16,21 @@ import { ApplicationFormData } from '../types';
 import { supabase } from '../lib/supabase';
 
 export const ContactPage: React.FC = () => {
+  const coursesList = [
+    'Master in Digital Marketing & AI Strategy',
+    'AI in Digital Marketing & Growth Systems',
+    'Performance Marketing & Media Buying',
+    'Search Engine Optimization (SEO) & Content Marketing',
+    'Social Media Marketing & Personal Branding',
+    'Web Analytics, GA4 & Conversion Rate Optimization (CRO)',
+    'Executive Digital Leadership Program (Weekend Batch)',
+  ];
+
   const [formData, setFormData] = useState<ApplicationFormData>({
     name: '',
     phone: '',
     email: '',
-    course: 'Master in Digital Marketing & AI Strategy',
+    course: coursesList[0],
     message: '',
   });
 
@@ -35,16 +45,6 @@ export const ContactPage: React.FC = () => {
   >('idle');
 
   const [statusMessage, setStatusMessage] = useState('');
-
-  const coursesList = [
-    'Master in Digital Marketing & AI Strategy',
-    'AI in Digital Marketing & Growth Systems',
-    'Performance Marketing & Media Buying',
-    'Search Engine Optimization (SEO) & Content Marketing',
-    'Social Media Marketing & Personal Branding',
-    'Web Analytics, GA4 & Conversion Rate Optimization (CRO)',
-    'Executive Digital Leadership Program (Weekend Batch)',
-  ];
 
   const validate = (): boolean => {
     const newErrors: Partial<
@@ -77,7 +77,8 @@ export const ContactPage: React.FC = () => {
     }
 
     if (!formData.message.trim()) {
-      newErrors.message = 'Message or career objective is required.';
+      newErrors.message =
+        'Message or career objective is required.';
     } else if (formData.message.trim().length < 5) {
       newErrors.message =
         'Message must be at least 5 characters.';
@@ -100,20 +101,25 @@ export const ContactPage: React.FC = () => {
     try {
       const { error } = await supabase
         .from('admissions')
-        .insert({
-          name: formData.name.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim(),
-          course: formData.course,
-          message: formData.message.trim(),
-        });
+        .insert([
+          {
+            name: formData.name.trim(),
+            phone: formData.phone.trim(),
+            email: formData.email.trim(),
+            course: formData.course.trim(),
+            message: formData.message.trim(),
+          },
+        ]);
 
       if (error) {
-        console.error('Supabase submission error:', error);
+        console.error('SUPABASE ERROR:', error);
 
         setSubmitStatus('error');
+
+        // Keep the actual error in the console for debugging.
+        // Show a simple message to the visitor.
         setStatusMessage(
-          'Unable to submit application. Please try again.'
+          'Unable to submit your application right now. Please try again.'
         );
 
         return;
@@ -121,24 +127,24 @@ export const ContactPage: React.FC = () => {
 
       setSubmitStatus('success');
       setStatusMessage(
-        'Application submitted successfully!'
+        'Application submitted successfully! Our admissions team will contact you soon.'
       );
 
       setFormData({
         name: '',
         phone: '',
         email: '',
-        course: 'Master in Digital Marketing & AI Strategy',
+        course: coursesList[0],
         message: '',
       });
 
       setErrors({});
     } catch (error) {
-      console.error('Submission error:', error);
+      console.error('SUPABASE NETWORK ERROR:', error);
 
       setSubmitStatus('error');
       setStatusMessage(
-        'Something went wrong. Please try again.'
+        'Network error. Please check your connection and try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -181,7 +187,7 @@ export const ContactPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Success State */}
+            {/* Success */}
             {submitStatus === 'success' && (
               <div
                 id="application-success-box"
@@ -200,14 +206,15 @@ export const ContactPage: React.FC = () => {
                     </p>
 
                     <p className="text-xs text-emerald-700 pt-2">
-                      Your application has been saved successfully.
+                      Your application has been securely received by
+                      the CBM Academy admissions team.
                     </p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Error State */}
+            {/* Error */}
             {submitStatus === 'error' && (
               <div
                 id="application-error-box"
@@ -343,7 +350,6 @@ export const ContactPage: React.FC = () => {
                     </p>
                   )}
                 </div>
-
               </div>
 
               {/* Course */}
@@ -352,7 +358,8 @@ export const ContactPage: React.FC = () => {
                   htmlFor="course"
                   className="block text-xs sm:text-sm font-bold text-slate-800 mb-1.5"
                 >
-                  Course Interested In <span className="text-red-500">*</span>
+                  Course Interested In{' '}
+                  <span className="text-red-500">*</span>
                 </label>
 
                 <select
@@ -448,7 +455,6 @@ export const ContactPage: React.FC = () => {
                   Your information is protected and stored securely. No spam policy.
                 </span>
               </div>
-
             </form>
           </div>
 
@@ -476,7 +482,8 @@ export const ContactPage: React.FC = () => {
                     </h4>
 
                     <p className="text-slate-600 leading-relaxed mt-0.5">
-                      CBM Academy Training Center, Connaught Place & South Extension Hub, New Delhi - 110001, India
+                      CBM Academy Training Center, Connaught Place &
+                      South Extension Hub, New Delhi - 110001, India
                     </p>
                   </div>
                 </div>
@@ -554,17 +561,11 @@ export const ContactPage: React.FC = () => {
               </h3>
 
               <p className="text-sm text-slate-400 leading-relaxed">
-                Schedule a 20-minute profile evaluation with our Senior Digital Marketing Strategist to choose the right specialization.
+                Schedule a 20-minute profile evaluation with our Senior
+                Digital Marketing Strategist to choose the right specialization.
               </p>
 
               <div className="pt-2">
                 <a
                   href="tel:+919876543210"
-                  className="inline-flex items-center gap-2 text-sm font-bold text-orange-400 hover:text-orange-300"
-                >
-                  <span>Call Admissions Helpline Now</span>
-                  <ArrowRight className="w-4 h-4" />
-                </a>
-              </div>
-
-            </div>
+                  className="inl
