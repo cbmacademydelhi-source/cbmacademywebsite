@@ -72,71 +72,57 @@ export const ContactPage: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setIsSubmitting(true);
-    setSubmitStatus('idle');
-    setStatusMessage('');
+  if (!validate()) return;
 
-    try {
-      const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-);
+  setIsSubmitting(true);
+  setSubmitStatus('idle');
+  setStatusMessage('');
 
-const { error } = await supabase
-  .from("Applications")
-  .insert([
-    {
-      name: formData.name,
-      phone: formData.phone,
-      email: formData.email,
-      course: formData.course,
-      message: formData.message,
-    },
-  ]);
+  try {
+    const response = await fetch('https://formspree.io/f/myeglvqo', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        phone: formData.phone,
+        email: formData.email,
+        course: formData.course,
+        message: formData.message,
+      }),
+    });
 
-if (error) {
-  throw error;
-}
+    const result = await response.json();
 
-if (data?.error) {
-  throw new Error(data.error);
-}
-
-      const result = data;
-
-if (result?.success) {
-  setSubmitStatus('success');
-  setStatusMessage(
-    result.message ||
-    'Your application has been submitted successfully. We will get in touch with you soon.'
-  );
-        // Clear the form after successful submission
-        setFormData({
-          name: '',
-          phone: '',
-          email: '',
-          course: 'Master in Digital Marketing & AI Strategy',
-          message: '',
-        });
-        setErrors({});
-      } else {
-        setSubmitStatus('error');
-        setStatusMessage(result.error || 'Submission failed. Please check your inputs and try again.');
-      }
-    } catch (err: any) {
-      console.error('Submission error:', err);
+    if (response.ok) {
+      setSubmitStatus('success');
+      setStatusMessage('Application submitted successfully!');
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        course: '',
+        message: '',
+      });
+    } else {
       setSubmitStatus('error');
-     setStatusMessage(
-  err instanceof Error ? err.message : 'Submission failed. Please try again.'
-);
-    } finally {
-      setIsSubmitting(false);
+      setStatusMessage(
+        result.error || 'Submission failed. Please try again.'
+      );
     }
-  };
+  } catch (error) {
+    console.error('Submission error:', error);
+    setSubmitStatus('error');
+    setStatusMessage('Network error. Please try again.');
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="bg-slate-50 min-h-screen py-12 lg:py-16">
